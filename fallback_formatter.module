@@ -96,7 +96,7 @@ function fallback_formatter_field_formatter_settings_summary($field, $instance, 
     return '<strong>' . t('No formatters selected yet.') . '</strong>';
   }
   else {
-    return theme('item_list', array('items' => $summary));
+    return theme('item_list', array('items' => $summary, 'type' => 'ol'));
   }
 }
 
