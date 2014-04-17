@@ -191,15 +191,24 @@ function fallback_formatter_field_formatter_view($entity_type, $entity, $field, 
   // Merge defaults from the formatters and ensure proper ordering.
   _fallback_formatter_prepare_formatters($field['type'], $settings['formatters']);
 
-  foreach ($settings['formatters'] as $formatter_name => $formatter) {
+  // Loop through each formatter in order.
+  foreach ($settings['formatters'] as $formatter) {
     $function = $formatter['module'] . '_field_formatter_view';
     if (function_exists($function)) {
-      $result = $function($entity_type, $entity, $field, $instance, $langcode, $items, $formatter);
-      if (element_get_visible_children($result)) {
-        foreach ($items as $delta => $item) {
-          if (!isset($element[$delta]) && !empty($result[$delta])) {
-            $element[$delta] = $result[$delta];
-          }
+      // Run any unrendered items through the formatter.
+      $formatter_items = array_diff_key($items, $element);
+      if ($result = $function($entity_type, $entity, $field, $instance, $langcode, $formatter_items, $formatter)) {
+
+        // Only add visible content from the formatter's render array result
+        // that matches an unseen delta.
+        $visible_deltas = element_get_visible_children($result);
+        $visible_deltas = array_intersect($visible_deltas, array_keys($formatter_items));
+        $element += array_intersect_key($result, array_flip($visible_deltas));
+
+        // If running this formatter completed the output for all items, then
+        // there is no need to loop through the rest of the formatters.
+        if (count($element) == count($items)) {
+          break;
         }
       }
     }
