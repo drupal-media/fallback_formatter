@@ -67,7 +67,6 @@ function fallback_formatter_field_formatter_settings_summary($field, $instance, 
   $formatters = field_info_formatter_types();
 
   _fallback_formatter_prepare_formatters($field['type'], $settings['formatters']);
-  dpm($settings);
 
   $summary = array();
   foreach ($settings['formatters'] as $name => $formatter) {
