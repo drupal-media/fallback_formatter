@@ -77,7 +77,18 @@ function fallback_formatter_field_formatter_settings_summary($field, $instance, 
       $summary[] = '<strong>' . t('Invalid formatter %name.', array('%name' => $formatters[$name]['label'])) . '</strong>';
     }
     else {
-      $summary[] = check_plain($formatters[$name]['label']);
+      $formatter_summary = check_plain($formatters[$name]['label']);
+
+      $function = $formatter['module'] . '_field_formatter_settings_summary';
+      if (function_exists($function)) {
+        $formatter_instance = _fallback_formatter_create_instance($instance, $view_mode, $name, $settings['formatters']);
+        $result = $function($field, $formatter_instance, $view_mode);
+        if (!empty($result)) {
+          $formatter_summary .= '<br><em>' . filter_xss($result) . '</em>';
+        }
+      }
+
+      $summary[] = $formatter_summary;
     }
   }
 
@@ -169,11 +180,7 @@ function fallback_formatter_field_formatter_settings_form($field, $instance, $vi
     if (function_exists($function)) {
       // Create a clone of the current instance variable with settings swapped
       // out.
-      $formatter_instance = $instance;
-      $formatter_instance['display'][$view_mode] = $formatter;
-      $formatter_instance['display'][$view_mode]['type'] = $name;
-      $formatter_instance['display'][$view_mode]['settings'] = isset($settings['formatters'][$name]['settings']) ? $settings['formatters'][$name]['settings'] : array();
-      $formatter_instance['display'][$view_mode]['settings'] += $formatter['settings'];
+      $formatter_instance = _fallback_formatter_create_instance($instance, $view_mode, $name, $settings['formatters']);
 
       $settings_form = $function($field, $formatter_instance, $view_mode, $form, $form_state);
       if (!empty($settings_form)) {
@@ -229,6 +236,16 @@ function fallback_formatter_field_formatter_view($entity_type, $entity, $field, 
   ksort($element);
 
   return $element;
+}
+
+function _fallback_formatter_create_instance(array $instance, $view_mode, $formatter_name, array $formatters) {
+  $formatter = field_info_formatter_types($formatter_name);
+  $clone = $instance;
+  $clone['display'][$view_mode] = $formatter;
+  $clone['display'][$view_mode]['type'] = $formatter_name;
+  $clone['display'][$view_mode]['settings'] = isset($formatters[$formatter_name]['settings']) ? $formatters[$formatter_name]['settings'] : array();
+  $clone['display'][$view_mode]['settings'] += $formatter['settings'];
+  return $clone;
 }
 
 function fallback_formatter_get_possibe_formatters($field_type) {
