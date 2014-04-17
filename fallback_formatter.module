@@ -99,9 +99,20 @@ function fallback_formatter_field_formatter_settings_form($field, $instance, $vi
   $element = array();
   $formatters = fallback_formatter_get_possibe_formatters($field['type']);
 
+  $element['#attached']['js'][] = drupal_get_path('module', 'fallback_formatter') . '/fallback_formatter.admin.js';
+
   $weights = array();
+  $current_weight = 0;
   foreach ($formatters as $name => $formatter) {
-    $weights[$name] = isset($settings['formatters'][$name]['weight']) ? $settings['formatters'][$name]['weight'] : (isset($formatter['weight']) ? $formatter['weight'] : 0);
+    if (isset($settings['formatters'][$name]['weight'])) {
+      $weights[$name] = $settings['formatters'][$name]['weight'];
+    }
+    elseif (isset($formatter['weight'])) {
+      $weights[$name] = $formatter['weight'];
+    }
+    elseif (empty($settings['formatters'])) {
+      $weights[$name] = $current_weight++;
+    }
   }
 
   $parents = array('fields', $field['field_name'], 'settings_edit_form', 'settings', 'formatters');
@@ -110,7 +121,7 @@ function fallback_formatter_field_formatter_settings_form($field, $instance, $vi
   $element['formatters']['status'] = array(
     '#type' => 'item',
     '#title' => t('Enabled formatters'),
-    '#prefix' => '<div id="fallback-formatter-status-wrapper">',
+    '#prefix' => '<div class="fallback-formatter-status-wrapper">',
     '#suffix' => '</div>',
   );
   foreach ($formatters as $name => $formatter) {
@@ -145,13 +156,13 @@ function fallback_formatter_field_formatter_settings_form($field, $instance, $vi
   }
 
   // Filter settings.
-  $element['formatter_settings_title'] = array(
+  /*$element['formatter_settings_title'] = array(
     '#type' => 'item',
     '#title' => t('Formatter settings'),
   );
   $element['formatter_settings'] = array(
     '#type' => 'vertical_tabs',
-  );
+  );*/
 
   foreach ($formatters as $name => $formatter) {
     $function = $formatter['module'] . '_field_formatter_settings_form';
