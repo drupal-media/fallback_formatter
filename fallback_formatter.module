@@ -1,0 +1,211 @@
+<?php
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+function fallback_formatter_field_formatter_info() {
+  $info['fallback'] = array(
+    'label' => t('Fallback'),
+    'field types' => array(),
+    'settings' => array(
+      'formatters' => array(),
+    ),
+    'weight' => 100,
+  );
+
+  return $info;
+}
+
+/**
+ * Implements hook_field_formatter_info_alter().
+ */
+function fallback_formatter_field_formatter_info_alter(&$info) {
+  $multiple_formatters = array(
+    'file_table',
+  );
+  foreach ($multiple_formatters as $formatter) {
+    if (isset($info[$formatter])) {
+      $info[$formatter] += array('multiple' => TRUE);
+    }
+  }
+
+  // Only enable the fallback formatter for field types that already have one
+  // or more formatters.
+  $field_types = array();
+  foreach ($info as $index => $formatter) {
+    if (!empty($formatter['multiple'])) {
+      $field_types = array_merge($field_types, $formatter['field types']);
+    }
+  }
+  $counts = array_count_values($field_types);
+  foreach ($counts as $field_type => $count) {
+    if ($count > 1) {
+      $info['fallback']['field types'][] = $field_type;
+    }
+  }
+}
+
+/**
+ * Implements field_formatter_settings_summary().
+ */
+function fallback_formatter_field_formatter_settings_summary($field, $instance, $view_mode) {
+  $display = $instance['display'][$view_mode];
+
+  $settings = $display['settings'];
+  $formatters = field_info_formatter_types();
+
+  $summary = array();
+  foreach ($settings['formatters'] as $formatter) {
+    if (!isset($formatters[$formatter['type']])) {
+      $summary[] = '<strong>' . t('Unknown formatter %name.', array('%name' => $formatter['type'])) . '</strong>';
+    }
+    elseif (in_array($field['type'], $formatters[$formatter['type']]['field types'])) {
+      $summary[] = '<strong>' . t('Invalid formatter %name.', array('%name' => $formatter['type'])) . '</strong>';
+    }
+    else {
+      $summary[] = check_plain($formatters[$formatter['type']]['label']);
+    }
+  }
+
+  if (empty($summary)) {
+    return '<strong>' . t('No formatters selected yet.') . '</strong>';
+  }
+  else {
+    return theme('item_list', array('items' => $summary));
+  }
+}
+
+function fallback_formatter_get_possibe_formatters($field_type) {
+  $return = array();
+
+  foreach (field_info_formatter_types() as $formatter => $info) {
+    // The fallback formatter cannot be used as a fallback formatter.
+    if ($formatter == 'fallback') {
+      continue;
+    }
+    // Check that the field type is allowed for the formatter.
+    elseif (!in_array($field_type, $info['field types'])) {
+      continue;
+    }
+    // Formatters tagged as 'multiple' that render all items as one element
+    // instead of one element per item delta will fail fallback detection.
+    elseif (!empty($info['multiple'])) {
+      continue;
+    }
+    else {
+      $return[$formatter] = $info;
+    }
+  }
+
+  return $return;
+}
+
+/**
+ * Implements field_formatter_settings_form().
+ */
+function fallback_formatter_field_formatter_settings_form($field, $instance, $view_mode, $form, &$form_state) {
+  $formatters = fallback_formatter_get_possibe_formatters($field['type']);
+
+  //fields[field_test][settings_edit_form][settings][view_mode]
+
+  dpm($form);
+
+  $parents = array($field['field_name'], 'settings_edit_form', 'settings');
+
+  $rows = array();
+  foreach ($formatters as $id => $formatter) {
+    $row = array();
+    $row['data'] = array();
+    $row['data'][] = array('class' => array('entry-cross'));
+    $row['data'][] = array('data' => array(
+      '#type' => 'weight',
+      '#title' => t('Weight'),
+      '#title_display' => 'invisible',
+      '#default_value' => 0,
+      '#parents' => array_merge($parents, array('formatters', $id, 'weight')),
+      '#attributes' => array(
+        'class' => array('entry-order-weight'),
+      ),
+    ));
+    $row['data'][] = array('data' => array(
+      '#type' => 'checkbox',
+      '#title' => t('Enabled'),
+      '#title_display' => 'invisible',
+      '#default_value' => 1,
+      '#parents' => array_merge($parents, array('formatters', $id, 'enabled')),
+    ));
+    $row['data'][] = array('data' => check_plain($formatter['label']));
+    $row['class'][] = 'draggable';
+    $rows[$id] = $row;
+  }
+
+  $element['formatters'] = array(
+    '#theme' => 'table',
+    '#header' => array(
+      // We need two empty columns for the weight field and the cross.
+      array('data' => NULL, 'colspan' => 2),
+      t('Enabled'),
+      t('Formatter'),
+    ),
+    '#rows' => $rows,
+    '#empty' => t('No formatters available.'),
+    '#attributes' => array('id' => $field['field_name'] . '-fallback-formatters'),
+    //'#element_validate' => array('_test_validate'),
+  );
+  drupal_add_tabledrag($field['field_name'] . '-fallback-formatters', 'order', 'sibling', 'entry-order-weight');
+
+  return $element;
+}
+
+function fallback_formatter_sort_formatters($a, $b) {
+  $a_weight = (is_array($a) && isset($a['weight'])) ? $a['weight'] : 0;
+  $b_weight = (is_array($b) && isset($b['weight'])) ? $b['weight'] : 0;
+  return ($a_weight < $b_weight) ? -1 : 1;
+}
+
+function _fallback_formatter_prepare_formatters($field_type, array &$formatters) {
+  $allowed_formatters = fallback_formatter_get_possibe_formatters($field_type);
+
+  $formatters = array_intersect_key($formatters, $allowed_formatters);
+
+  foreach ($formatters as $formatter => $info) {
+    // Provide some default values.
+    $formatters[$formatter] += array('type' => $formatter, 'weight' => 0);
+    // Merge in defaults and settigns from hook_field_formatter_info().
+    $formatters[$formatter] += $allowed_formatters[$formatter];
+    $formatters[$formatter]['settings'] += $allowed_formatters[$formatter]['settings'];
+  }
+
+  // Sort by weight.
+  uasort($formatters, 'fallback_formatter_sort_formatters');
+}
+
+/**
+ * Implemenst hook_field_formatter_view().
+ */
+function fallback_formatter_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+  $settings = $display['settings'];
+
+  // Merge defaults from the formatters and ensure proper ordering.
+  _fallback_formatter_prepare_formatters($field['type'], $settings['formatters']);
+
+  foreach ($settings['formatters'] as $formatter_name => $formatter) {
+    $function = $formatter['module'] . '_field_formatter_view';
+    if (function_exists($function)) {
+      $result = $function($entity_type, $entity, $field, $instance, $langcode, $items, $formatter);
+      if (element_get_visible_children($result)) {
+        foreach ($items as $delta => $item) {
+          if (!isset($element[$delta]) && !empty($result[$delta])) {
+            $element[$delta] = $result[$delta];
+          }
+        }
+      }
+    }
+  }
+
+  // Ensure the resulting elements are ordered properly by delta.
+  ksort($element);
+
+  return $element;
+}

@@ -1,0 +1,99 @@
+<?php
+
+class FallbackFormatterTestCase extends DrupalWebTestCase {
+  protected $profile = 'testing';
+
+  public static function getInfo() {
+    return array(
+      'name' => 'Fallback formatter',
+      'description' => 'Test basic functionality of the fallback formatter.',
+      'group' => 'Field types',
+    );
+  }
+
+  public function setUp() {
+    parent::setUp(array('text', 'fallback_formatter', 'fallback_formatter_test'));
+  }
+
+  public function test() {
+    $type = $this->drupalCreateContentType();
+
+    $field = array(
+      'field_name' => 'test_text',
+      'type' => 'text',
+    );
+    field_create_field($field);
+
+    $instance = array(
+      'field_name' => 'test_text',
+      'entity_type' => 'node',
+      'bundle' => $type->type,
+    );
+    field_create_instance($instance);
+
+    $node = new stdClass();
+    $node->type = $type->type;
+    $node->nid = 0;
+    $node->test_text = array();
+    $node->test_text[LANGUAGE_NONE][0] = array('value' => 'Apple', 'format' => NULL);
+    $node->test_text[LANGUAGE_NONE][1]['value'] = 'Banana';
+    $node->test_text[LANGUAGE_NONE][2]['value'] = 'Carrot';
+
+    $formatters = array(
+      'fallback_test_a' => array(),
+      'fallback_test_b' => array(),
+      'fallback_test_default' => array(
+        'settings' => array('prefix' => 'DEFAULT: '),
+      ),
+    );
+    $expected = array(
+      0 => array('#markup' => 'A: Apple'),
+      1 => array('#markup' => 'B: Banana'),
+      2 => array('#markup' => 'DEFAULT: Carrot'),
+    );
+    $this->assertFallbackFormatter('node', $node, 'test_text', $formatters, $expected);
+
+    $formatters = array(
+      'fallback_test_a' => array(),
+      'fallback_test_b' => array(),
+      'fallback_test_default' => array(
+        'settings' => array('prefix' => 'DEFAULT: '),
+        'weight' => -1,
+      ),
+    );
+    $expected = array(
+      0 => array('#markup' => 'DEFAULT: Apple'),
+      1 => array('#markup' => 'DEFAULT: Banana'),
+      2 => array('#markup' => 'DEFAULT: Carrot'),
+    );
+    $this->assertFallbackFormatter('node', $node, 'test_text', $formatters, $expected);
+
+    $formatters = array(
+      'fallback_test_a' => array(
+        'settings' => array('deny' => TRUE),
+      ),
+      'fallback_test_b' => array(),
+      'fallback_test_default' => array(
+        'settings' => array('prefix' => 'DEFAULT: '),
+      ),
+    );
+    $expected = array(
+      // Delta 0 skips the first formatter, but we test that it is still
+      // returned in the proper order since the last formatter displayed it.
+      0 => array('#markup' => 'DEFAULT: Apple'),
+      1 => array('#markup' => 'B: Banana'),
+      2 => array('#markup' => 'DEFAULT: Carrot'),
+    );
+    $this->assertFallbackFormatter('node', $node, 'test_text', $formatters, $expected);
+  }
+
+  protected function assertFallbackFormatter($entity_type, $entity, $field_name, array $formatters = array(), array $expected_output) {
+    $display = array(
+      'type' => 'fallback',
+      'settings' => array('formatters' => $formatters),
+    );
+    $output = field_view_field($entity_type, $entity, $field_name, $display);
+    $output = array_intersect_key($output, element_children($output));
+    $this->assertEqual($output, $expected_output);
+  }
+}

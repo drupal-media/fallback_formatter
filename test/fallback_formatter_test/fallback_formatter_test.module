@@ -1,0 +1,77 @@
+<?php
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+function fallback_formatter_test_field_formatter_info() {
+  $info['fallback_test_a'] = array(
+    'label' => 'Test A',
+    'field types' => array('text'),
+    'settings' => array(
+      'deny' => FALSE,
+    ),
+  );
+  $info['fallback_test_b'] = array(
+    'label' => 'Test B',
+    'field types' => array('text'),
+    'settings' => array(
+      'deny' => FALSE,
+    ),
+  );
+  $info['fallback_test_default'] = array(
+    'label' => 'Default',
+    'field types' => array('text'),
+    'settings' => array(
+      'prefix' => '',
+    ),
+  );
+  return $info;
+}
+
+/**
+ * Implemenst hook_field_formatter_view().
+ */
+function fallback_formatter_test_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+  $settings = $display['settings'];
+
+  switch ($display['type']) {
+    case 'fallback_test_a':
+      foreach ($items as $delta => $item) {
+        $output = _text_sanitize($instance, $langcode, $item, 'value');
+        if (strtolower(substr($output, 0, 1)) === 'a') {
+          $element[$delta] = array('#markup' => 'A: ' . $output);
+          if (!empty($settings['deny'])) {
+            $element[$delta]['#access'] = FALSE;
+          }
+        }
+      }
+      break;
+
+    case 'fallback_test_b':
+      foreach ($items as $delta => $item) {
+        $output = _text_sanitize($instance, $langcode, $item, 'value');
+        if (strtolower(substr($output, 0, 1)) === 'b') {
+          $element[$delta] = array('#markup' => 'B: ' . $output);
+          if (!empty($settings['deny'])) {
+            $element[$delta]['#access'] = FALSE;
+          }
+        }
+      }
+      break;
+
+    case 'fallback_test_default':
+      foreach ($items as $delta => $item) {
+        $output = _text_sanitize($instance, $langcode, $item, 'value');
+        if (!empty($settings['prefix'])) {
+          $element[$delta] = array('#markup' => $settings['prefix'] . $output);
+        }
+        else {
+          $element[$delta] = array('#markup' => $output);
+        }
+      }
+      break;
+  }
+
+  return $element;
+}
