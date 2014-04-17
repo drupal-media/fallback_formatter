@@ -24,8 +24,8 @@ function fallback_formatter_field_formatter_info_alter(&$info) {
     'file_table',
   );
   foreach ($multiple_formatters as $formatter) {
-    if (isset($info[$formatter])) {
-      $info[$formatter] += array('multiple' => TRUE);
+    if (isset($info[$formatter]) && !isset($info[$formatter]['behaviors']['multiple'])) {
+      $info[$formatter]['behaviors']['multiple'] = FIELD_BEHAVIOR_CUSTOM;
     }
   }
 
@@ -33,9 +33,10 @@ function fallback_formatter_field_formatter_info_alter(&$info) {
   // or more formatters.
   $field_types = array();
   foreach ($info as $index => $formatter) {
-    if (empty($formatter['multiple'])) {
-      $field_types = array_merge($field_types, $formatter['field types']);
+    if (isset($formatter['behaviors']['multiple']) && $formatter['behaviors']['multiple'] == FIELD_BEHAVIOR_CUSTOM) {
+      continue;
     }
+    $field_types = array_merge($field_types, $formatter['field types']);
   }
   $counts = array_count_values($field_types);
   foreach ($counts as $field_type => $count) {
@@ -89,7 +90,7 @@ function fallback_formatter_get_possibe_formatters($field_type) {
     }
     // Formatters tagged as 'multiple' that render all items as one element
     // instead of one element per item delta will fail fallback detection.
-    elseif (!empty($info['multiple'])) {
+    elseif (isset($formatter['behaviors']['multiple']) && $formatter['behaviors']['multiple'] == FIELD_BEHAVIOR_CUSTOM) {
       continue;
     }
     else {
