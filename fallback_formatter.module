@@ -33,7 +33,7 @@ function fallback_formatter_field_formatter_info_alter(&$info) {
   // or more formatters.
   $field_types = array();
   foreach ($info as $index => $formatter) {
-    if (!empty($formatter['multiple'])) {
+    if (empty($formatter['multiple'])) {
       $field_types = array_merge($field_types, $formatter['field types']);
     }
   }
