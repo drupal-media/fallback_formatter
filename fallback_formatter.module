@@ -90,7 +90,7 @@ function fallback_formatter_get_possibe_formatters($field_type) {
     }
     // Formatters tagged as 'multiple' that render all items as one element
     // instead of one element per item delta will fail fallback detection.
-    elseif (isset($formatter['behaviors']['multiple']) && $formatter['behaviors']['multiple'] == FIELD_BEHAVIOR_CUSTOM) {
+    elseif (isset($info['behaviors']['multiple']) && $info['behaviors']['multiple'] == FIELD_BEHAVIOR_CUSTOM) {
       continue;
     }
     else {
