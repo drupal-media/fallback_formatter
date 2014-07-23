@@ -13,7 +13,7 @@ use Drupal\simpletest\WebTestBase;
 /**
  * Test basic functionality of the fallback formatter.
  *
- * @group Field types
+ * @group fallback_formatter
  */
 class FallbackFormatterTestCase extends WebTestBase {
 
