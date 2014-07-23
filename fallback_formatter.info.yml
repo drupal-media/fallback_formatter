@@ -1,0 +1,4 @@
+name: 'Fallback formatter'
+type: module
+description: 'Provides a formatter that allows the user to configure multiple formatters and the order in which they should be attempted to display output.'
+core: 8.x

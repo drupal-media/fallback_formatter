@@ -1,0 +1,4 @@
+name: 'Fallback formatter test'
+type: module
+core: 8.x
+hidden: TRUE
