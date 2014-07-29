@@ -108,7 +108,7 @@ function fallback_formatter_field_formatter_settings_form($field, $instance, $vi
   $settings = $display['settings'];
 
   $element = array();
-  $formatters = fallback_formatter_get_possibe_formatters($field['type']);
+  $formatters = fallback_formatter_get_possible_formatters($field['type']);
 
   $element['#attached']['js'][] = drupal_get_path('module', 'fallback_formatter') . '/fallback_formatter.admin.js';
 
@@ -248,7 +248,7 @@ function _fallback_formatter_create_instance(array $instance, $view_mode, $forma
   return $clone;
 }
 
-function fallback_formatter_get_possibe_formatters($field_type) {
+function fallback_formatter_get_possible_formatters($field_type) {
   $return = array();
 
   foreach (field_info_formatter_types() as $formatter => $info) {
@@ -274,7 +274,7 @@ function fallback_formatter_get_possibe_formatters($field_type) {
 }
 
 function _fallback_formatter_prepare_formatters($field_type, array &$formatters) {
-  $allowed_formatters = fallback_formatter_get_possibe_formatters($field_type);
+  $allowed_formatters = fallback_formatter_get_possible_formatters($field_type);
 
   $formatters = array_intersect_key($formatters, $allowed_formatters);
 
