@@ -19,7 +19,8 @@ use Drupal\Core\Render\Element;
  *
  * @FieldFormatter(
  *   id = "fallback",
- *   label = @Translation("Fallback")
+ *   label = @Translation("Fallback"),
+ *   weight = 100
  * )
  */
 class FallbackFormatter extends FormatterBase {
