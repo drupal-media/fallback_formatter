@@ -1,7 +1,12 @@
-(function ($) {
+(function ($, Drupal) {
 
-Drupal.behaviors.formatterStatusStatus = {
-  attach: function (context, settings) {
+  "use strict";
+
+  /**
+   * Attach behaviors for the display settings.
+   */
+  Drupal.behaviors.fileValidateAutoAttach = {
+    attach: function (context, settings) {
     $('.fallback-formatter-status-wrapper input.form-checkbox', context).once('fallback-formatter-status', function () {
       var $checkbox = $(this);
       // Retrieve the tabledrag row belonging to this filter.
@@ -46,4 +51,4 @@ Drupal.behaviors.formatterStatusStatus = {
   }
 };
 
-})(jQuery);
+})(jQuery, Drupal);
