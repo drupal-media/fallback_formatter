@@ -87,7 +87,7 @@ class FallbackFormatter extends FormatterBase {
   public function settingsForm(array $form, array &$form_state) {
     $elements = parent::settingsForm($form, $form_state);
     $settings = $this->getSettings();
-    $formatters = fallback_formatter_get_possibe_formatters($this->fieldDefinition->getType());
+    $formatters = fallback_formatter_get_possible_formatters($this->fieldDefinition->getType());
 
     $elements['#attached']['js'][] = drupal_get_path('module', 'fallback_formatter') . '/fallback_formatter.admin.js';
 
@@ -260,7 +260,7 @@ class FallbackFormatter extends FormatterBase {
    * @todo - this might be merged with getFormatter()?
    */
   protected function prepareFormatters($field_type, array &$formatters) {
-    $allowed_formatters = fallback_formatter_get_possibe_formatters($field_type);
+    $allowed_formatters = fallback_formatter_get_possible_formatters($field_type);
 
     $formatters = array_intersect_key($formatters, $allowed_formatters);
 

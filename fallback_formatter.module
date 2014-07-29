@@ -39,7 +39,7 @@ function fallback_formatter_field_formatter_info_alter(&$info) {
  * @return array
  *   Formatters info array.
  */
-function fallback_formatter_get_possibe_formatters($field_type) {
+function fallback_formatter_get_possible_formatters($field_type) {
   $return = array();
 
   foreach (\Drupal::service('plugin.manager.field.formatter')->getDefinitions() as $formatter => $info) {
