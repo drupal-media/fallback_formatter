@@ -274,7 +274,7 @@ class FallbackFormatter extends FormatterBase {
       }
 
       // Provide some default values.
-      $formatters[$formatter] += array('type' => $formatter, 'weight' => 0);
+      $formatters[$formatter] += array('weight' => 0);
       // Merge in defaults.
       $formatters[$formatter] += $allowed_formatters[$formatter];
       if (!empty($allowed_formatters[$formatter]['settings'])) {
