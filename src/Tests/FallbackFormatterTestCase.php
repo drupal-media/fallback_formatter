@@ -27,13 +27,13 @@ class FallbackFormatterTestCase extends WebTestBase {
     $this->contentType = $this->drupalCreateContentType();
 
     $field = entity_create('field_storage_config', array(
-      'name' => 'test_text',
+      'field_name' => 'test_text',
       'entity_type' => 'node',
       'type' => 'text',
     ));
     $field->save();
 
-    $instance = entity_create('field_instance_config', array(
+    $instance = entity_create('field_config', array(
       'field_storage' => $field,
       'bundle' => $this->contentType->id(),
     ));

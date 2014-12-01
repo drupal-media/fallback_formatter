@@ -246,7 +246,7 @@ class FallbackFormatter extends FormatterBase {
     $options += array(
       'field_definition' => $this->fieldDefinition,
       'view_mode' => $this->viewMode,
-      'configuration' => array('type' => $options['type'], 'settings' => $options['settings']),
+      'configuration' => array('type' => $options['id'], 'settings' => $options['settings']),
     );
     return $this->formatterManager->getInstance($options);
   }
@@ -274,7 +274,7 @@ class FallbackFormatter extends FormatterBase {
       }
 
       // Provide some default values.
-      $formatters[$formatter] += array('type' => $formatter, 'weight' => 0);
+      $formatters[$formatter] += array('weight' => 0);
       // Merge in defaults.
       $formatters[$formatter] += $allowed_formatters[$formatter];
       if (!empty($allowed_formatters[$formatter]['settings'])) {
