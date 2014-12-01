@@ -8,6 +8,7 @@ function fallback_formatter_theme() {
   return array(
     'fallback_formatter_settings_order' => array(
       'render element' => 'element',
+      'function' => 'theme_fallback_formatter_settings_order',
     ),
   );
 }
