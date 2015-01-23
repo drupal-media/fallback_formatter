@@ -1,0 +1,4 @@
+admin:
+  js: fallback_formatter.admin.js
+  dependencies:
+    - core/jquery

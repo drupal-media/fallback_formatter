@@ -91,7 +91,7 @@ class FallbackFormatter extends FormatterBase {
     $settings = $this->getSettings();
     $formatters = fallback_formatter_get_possible_formatters($this->fieldDefinition->getType());
 
-    $elements['#attached']['js'][] = drupal_get_path('module', 'fallback_formatter') . '/fallback_formatter.admin.js';
+    $elements['#attached']['library'][] = 'fallback_formatter/admin';
 
     $weights = array();
     $current_weight = 0;
