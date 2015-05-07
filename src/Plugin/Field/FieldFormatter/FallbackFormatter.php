@@ -7,7 +7,7 @@
 
 namespace Drupal\fallback_formatter\Plugin\Field\FieldFormatter;
 
-use Drupal\Component\Utility\String;
+use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Component\Utility\Xss;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\FieldItemListInterface;
@@ -196,7 +196,7 @@ class FallbackFormatter extends FormatterBase {
         $formatter_instance = $this->getFormatter($options);
         $result = $formatter_instance->settingsSummary();
 
-        $summary_items[] = String::format('<strong>@label</strong>!settings_summary', array(
+        $summary_items[] = SafeMarkup::format('<strong>@label</strong>!settings_summary', array(
           '@label' => $formatter_instance->getPluginDefinition()['label'],
           '!settings_summary' => '<br>' . Xss::filter(!empty($result) ? implode(', ', $result) : ''),
         ));
