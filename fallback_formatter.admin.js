@@ -5,7 +5,7 @@
   /**
    * Attach behaviors for the display settings.
    */
-  Drupal.behaviors.fileValidateAutoAttach = {
+  Drupal.behaviors.fallbackFormatterStatus = {
     attach: function (context, settings) {
     $('.fallback-formatter-status-wrapper input.form-checkbox', context).once('fallback-formatter-status', function () {
       var $checkbox = $(this);
