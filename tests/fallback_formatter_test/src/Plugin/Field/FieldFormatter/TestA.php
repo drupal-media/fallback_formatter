@@ -29,7 +29,7 @@ class TestA extends FormatterBase {
 
     /** @var \Drupal\Core\Field\FieldItemInterface $item */
     foreach ($items as $delta => $item) {
-      $output = $item->processed;
+      $output = $item->value;
       if (strtolower(substr($output, 0, 1)) === 'a') {
         $elements[$delta] = array('#markup' => 'A: ' . $output);
         if (!empty($this->settings['deny'])) {
