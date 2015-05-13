@@ -29,7 +29,7 @@ class TestDefault extends FormatterBase {
 
     /** @var \Drupal\Core\Field\FieldItemInterface $item */
     foreach ($items as $delta => $item) {
-      $output = $item->processed;
+      $output = $item->value;
       if (!empty($this->settings['prefix'])) {
         $elements[$delta] = array('#markup' => $this->settings['prefix'] . $output);
       }
