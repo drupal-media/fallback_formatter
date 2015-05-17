@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\fallback_formatter_test\Plugin\Field\FieldFormatter\TestB.
+ * Contains \Drupal\fallback_formatter_test\Plugin\Field\FieldFormatter\TestDefault.
  */
 
 namespace Drupal\fallback_formatter_test\Plugin\Field\FieldFormatter;
@@ -14,14 +14,14 @@ use Drupal\Core\Field\FormatterBase;
  * Plugin implementation of the 'boolean' formatter.
  *
  * @FieldFormatter(
- *   id = "fallback_test_b",
- *   label = @Translation("Test B"),
+ *   id = "fallback_test_default",
+ *   label = @Translation("Test Default"),
  *   field_types = {
  *     "text",
  *   }
  * )
  */
-class TestB extends FormatterBase {
+class TestDefault extends FormatterBase {
 
   public function viewElements(FieldItemListInterface $items) {
 
@@ -29,12 +29,12 @@ class TestB extends FormatterBase {
 
     /** @var \Drupal\Core\Field\FieldItemInterface $item */
     foreach ($items as $delta => $item) {
-      $output = $item->processed;
-      if (strtolower(substr($output, 0, 1)) === 'b') {
-        $elements[$delta] = array('#markup' => 'B: ' . $output);
-        if (!empty($this->settings['deny'])) {
-          $elements[$delta]['#access'] = FALSE;
-        }
+      $output = $item->value;
+      if (!empty($this->settings['prefix'])) {
+        $elements[$delta] = array('#markup' => $this->settings['prefix'] . $output);
+      }
+      else {
+        $elements[$delta] = array('#markup' => $output);
       }
     }
 
@@ -43,7 +43,7 @@ class TestB extends FormatterBase {
 
   public static function defaultSettings() {
     return array(
-      'deny' => FALSE,
+      'prefix' => '',
     );
   }
 
