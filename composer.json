@@ -1,0 +1,11 @@
+{
+  "name": "drupal/fallback_formatter",
+  "description": "Provides a field formatter that can attempt multiple formatters and the first one that returns output wins.",
+  "type": "drupal-module",
+  "homepage": "https://www.drupal.org/project/fallback_formatter",
+  "support": {
+    "issues": "https://www.drupal.org/project/issues/fallback_formatter",
+    "irc": "irc://irc.freenode.org/drupal-media"
+  },
+  "license": "GPL-2.0+"
+}
