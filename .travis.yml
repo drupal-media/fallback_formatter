@@ -7,7 +7,7 @@
 #   https://github.com/sonnym/travis-ci-drupal-module-example
 
 language: php
-sudo: false
+sudo: required
 
 php:
   - 5.5
