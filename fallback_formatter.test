@@ -5,9 +5,9 @@ class FallbackFormatterTestCase extends DrupalWebTestCase {
 
   public static function getInfo() {
     return array(
-      'name' => 'Fallback formatter',
+      'name' => 'Fallback Formatter',
       'description' => 'Test basic functionality of the fallback formatter.',
-      'group' => 'Field types',
+      'group' => 'Fallback Formatter',
     );
   }
 
