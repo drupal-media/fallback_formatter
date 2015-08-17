@@ -104,74 +104,61 @@ function fallback_formatter_field_formatter_settings_summary($field, $instance, 
  * Implements hook_field_formatter_settings_form().
  */
 function fallback_formatter_field_formatter_settings_form($field, $instance, $view_mode, $form, &$form_state) {
+  $elements = array();
   $display = $instance['display'][$view_mode];
   $settings = $display['settings'];
 
-  $element = array();
-  $formatters = fallback_formatter_get_possible_formatters($field['type']);
+  $formatters = $settings['formatters'];
+  _fallback_formatter_prepare_formatters($field['type'], $formatters, FALSE);
 
-  $element['#attached']['js'][] = drupal_get_path('module', 'fallback_formatter') . '/fallback_formatter.admin.js';
-
-  $weights = array();
-  $current_weight = 0;
-  foreach ($formatters as $name => $formatter) {
-    if (isset($settings['formatters'][$name]['weight'])) {
-      $weights[$name] = $settings['formatters'][$name]['weight'];
-    }
-    elseif (isset($formatter['weight'])) {
-      $weights[$name] = $formatter['weight'];
-    }
-    elseif (empty($settings['formatters'])) {
-      $weights[$name] = $current_weight++;
-    }
-  }
+  $elements['#attached']['js'][] = drupal_get_path('module', 'fallback_formatter') . '/fallback_formatter.admin.js';
 
   $parents = array('fields', $field['field_name'], 'settings_edit_form', 'settings', 'formatters');
 
   // Filter status.
-  $element['formatters']['status'] = array(
+  $elements['formatters']['status'] = array(
     '#type' => 'item',
     '#title' => t('Enabled formatters'),
     '#prefix' => '<div class="fallback-formatter-status-wrapper">',
     '#suffix' => '</div>',
   );
-  foreach ($formatters as $name => $formatter) {
-    $element['formatters']['status'][$name] = array(
+  foreach ($formatters as $name => $options) {
+    $elements['formatters']['status'][$name] = array(
       '#type' => 'checkbox',
-      '#title' => $formatter['label'],
-      '#default_value' => !empty($settings['formatters'][$name]['status']),
+      '#title' => $options['label'],
+      '#default_value' => !empty($options['status']),
       '#parents' => array_merge($parents, array($name, 'status')),
-      '#weight' => $weights[$name],
+      '#weight' => $options['weight'],
     );
   }
 
   // Filter order (tabledrag).
-  $element['formatters']['order'] = array(
+  $elements['formatters']['order'] = array(
     '#type' => 'item',
     '#title' => t('Formatter processing order'),
     '#theme' => 'fallback_formatter_settings_order',
   );
-  foreach ($formatters as $name => $formatter) {
-    $element['formatters']['order'][$name]['label'] = array(
-      '#markup' => $formatter['label'],
+  foreach ($formatters as $name => $options) {
+    $elements['formatters']['order'][$name]['label'] = array(
+      '#markup' => $options['label'],
     );
-    $element['formatters']['order'][$name]['weight'] = array(
+    $elements['formatters']['order'][$name]['weight'] = array(
       '#type' => 'weight',
-      '#title' => t('Weight for @title', array('@title' => $formatter['label'])),
+      '#title' => t('Weight for @title', array('@title' => $options['label'])),
       '#title_display' => 'invisible',
       '#delta' => 50,
-      '#default_value' => $weights[$name],
+      '#default_value' => $options['weight'],
       '#parents' => array_merge($parents, array($name, 'weight')),
     );
-    $element['formatters']['order'][$name]['#weight'] = $weights[$name];
+    $elements['formatters']['order'][$name]['#weight'] = $options['weight'];
   }
 
   // Filter settings.
-  /*$element['formatter_settings_title'] = array(
+  /*$elements['formatter_settings_title'] = array(
     '#type' => 'item',
     '#title' => t('Formatter settings'),
   );
-  $element['formatter_settings'] = array(
+  $elements['formatter_settings'] = array(
     '#type' => 'vertical_tabs',
   );*/
 
@@ -184,19 +171,25 @@ function fallback_formatter_field_formatter_settings_form($field, $instance, $vi
 
       $settings_form = $function($field, $formatter_instance, $view_mode, $form, $form_state);
       if (!empty($settings_form)) {
-        $element['formatters']['settings'][$name] = array(
+        $elements['formatters']['settings'][$name] = array(
           '#type' => 'fieldset',
           '#title' => $formatter['label'],
           '#parents' => array_merge($parents, array($name, 'settings')),
-          '#weight' => $weights[$name],
+          '#weight' => $formatter['weight'],
           '#group' => 'formatter_settings',
         );
-        $element['formatters']['settings'][$name] += $settings_form;
+        $elements['formatters']['settings'][$name] += $settings_form;
       }
     }
+
+    $elements['formatters']['settings'][$name]['formatter'] = array(
+      '#type' => 'value',
+      '#value' => $name,
+      '#parents' => array_merge($parents, array($name, 'formatter')),
+    );
   }
 
-  return $element;
+  return $elements;
 }
 
 /**
@@ -273,33 +266,30 @@ function fallback_formatter_get_possible_formatters($field_type) {
   return $return;
 }
 
-function _fallback_formatter_prepare_formatters($field_type, array &$formatters) {
+function _fallback_formatter_prepare_formatters($field_type, array &$formatters, $filter_enabled = TRUE) {
+  $default_weight = 0;
+
   $allowed_formatters = fallback_formatter_get_possible_formatters($field_type);
+  $formatters += $allowed_formatters;
 
   $formatters = array_intersect_key($formatters, $allowed_formatters);
 
   foreach ($formatters as $formatter => $info) {
     // Remove disabled formatters.
-    if (isset($info['status']) && !$info['status']) {
+    if ($filter_enabled && empty($info['status'])) {
       unset($formatters[$formatter]);
       continue;
     }
 
     // Provide some default values.
-    $formatters[$formatter] += array('type' => $formatter, 'weight' => 0);
+    $formatters[$formatter] += array('type' => $formatter, 'weight' => $default_weight++);
     // Merge in defaults and settigns from hook_field_formatter_info().
     $formatters[$formatter] += $allowed_formatters[$formatter];
     $formatters[$formatter]['settings'] += $allowed_formatters[$formatter]['settings'];
   }
 
   // Sort by weight.
-  uasort($formatters, 'fallback_formatter_sort_formatters');
-}
-
-function fallback_formatter_sort_formatters($a, $b) {
-  $a_weight = (is_array($a) && isset($a['weight'])) ? $a['weight'] : 0;
-  $b_weight = (is_array($b) && isset($b['weight'])) ? $b['weight'] : 0;
-  return ($a_weight < $b_weight) ? -1 : 1;
+  uasort($formatters, 'drupal_sort_weight');
 }
 
 function theme_fallback_formatter_settings_order($variables) {

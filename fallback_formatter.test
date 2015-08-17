@@ -40,10 +40,15 @@ class FallbackFormatterTestCase extends DrupalWebTestCase {
     $node->test_text[LANGUAGE_NONE][2]['value'] = 'Carrot';
 
     $formatters = array(
-      'fallback_test_a' => array(),
-      'fallback_test_b' => array(),
+      'fallback_test_a' => array(
+        'status' => 1,
+      ),
+      'fallback_test_b' => array(
+        'status' => 1,
+      ),
       'fallback_test_default' => array(
         'settings' => array('prefix' => 'DEFAULT: '),
+        'status' => 1,
       ),
     );
     $expected = array(
@@ -54,10 +59,15 @@ class FallbackFormatterTestCase extends DrupalWebTestCase {
     $this->assertFallbackFormatter('node', $node, 'test_text', $formatters, $expected);
 
     $formatters = array(
-      'fallback_test_a' => array(),
-      'fallback_test_b' => array(),
+      'fallback_test_a' => array(
+        'status' => 1,
+      ),
+      'fallback_test_b' => array(
+        'status' => 1,
+      ),
       'fallback_test_default' => array(
         'settings' => array('prefix' => 'DEFAULT: '),
+        'status' => 1,
         'weight' => -1,
       ),
     );
@@ -70,11 +80,15 @@ class FallbackFormatterTestCase extends DrupalWebTestCase {
 
     $formatters = array(
       'fallback_test_a' => array(
+        'status' => 1,
         'settings' => array('deny' => TRUE),
       ),
-      'fallback_test_b' => array(),
+      'fallback_test_b' => array(
+        'status' => 1,
+      ),
       'fallback_test_default' => array(
         'settings' => array('prefix' => 'DEFAULT: '),
+        'status' => 1,
       ),
     );
     $expected = array(
