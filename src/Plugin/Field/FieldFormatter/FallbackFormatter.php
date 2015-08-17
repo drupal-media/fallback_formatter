@@ -91,18 +91,19 @@ class FallbackFormatter extends FormatterBase {
     $settings = $this->getSettings();
     $formatters = fallback_formatter_get_possible_formatters($this->fieldDefinition->getType());
 
-    $elements['#attached']['js'][] = drupal_get_path('module', 'fallback_formatter') . '/fallback_formatter.admin.js';
+    $elements['#attached']['library'][] = 'fallback_formatter/admin';
 
     $weights = array();
     $current_weight = 0;
     foreach ($formatters as $name => $options) {
+      $formatters[$name]['settings'] = isset($settings['formatters'][$name]['settings']) ? $settings['formatters'][$name]['settings'] : array();
       if (isset($settings['formatters'][$name]['weight'])) {
         $weights[$name] = $settings['formatters'][$name]['weight'];
       }
       elseif (isset($options['weight'])) {
         $weights[$name] = $options['weight'];
       }
-      elseif (empty($settings['formatters'])) {
+      else {
         $weights[$name] = $current_weight++;
       }
     }
@@ -155,7 +156,6 @@ class FallbackFormatter extends FormatterBase {
 
     // Filter settings.
     foreach ($formatters as $name => $options) {
-
       $formatter_instance = $this->getFormatter($options);
       $settings_form = $formatter_instance->settingsForm($form, $form_state);
 
