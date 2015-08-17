@@ -66,23 +66,6 @@ function fallback_formatter_get_possible_formatters($field_type) {
 }
 
 /**
- * Callback to sort formatters by their weights.
- *
- * @param array $a
- *   Formatter definition a.
- * @param array $b
- *   Formatter definition b.
- *
- * @return int
- *   Sort flag.
- */
-function fallback_formatter_sort_formatters($a, $b) {
-  $a_weight = (is_array($a) && isset($a['weight'])) ? $a['weight'] : 0;
-  $b_weight = (is_array($b) && isset($b['weight'])) ? $b['weight'] : 0;
-  return ($a_weight < $b_weight) ? -1 : 1;
-}
-
-/**
  * Themes the formatter settings form.
  *
  * @param array $variables

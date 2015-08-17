@@ -89,24 +89,11 @@ class FallbackFormatter extends FormatterBase {
   public function settingsForm(array $form, FormStateInterface $form_state) {
     $elements = parent::settingsForm($form, $form_state);
     $settings = $this->getSettings();
-    $formatters = fallback_formatter_get_possible_formatters($this->fieldDefinition->getType());
+
+    $formatters = $settings['formatters'];
+    $this->prepareFormatters($this->fieldDefinition->getType(), $formatters, FALSE);
 
     $elements['#attached']['library'][] = 'fallback_formatter/admin';
-
-    $weights = array();
-    $current_weight = 0;
-    foreach ($formatters as $name => $options) {
-      $formatters[$name]['settings'] = isset($settings['formatters'][$name]['settings']) ? $settings['formatters'][$name]['settings'] : array();
-      if (isset($settings['formatters'][$name]['weight'])) {
-        $weights[$name] = $settings['formatters'][$name]['weight'];
-      }
-      elseif (isset($options['weight'])) {
-        $weights[$name] = $options['weight'];
-      }
-      else {
-        $weights[$name] = $current_weight++;
-      }
-    }
 
     $parents = array('fields', $this->fieldDefinition->getName(), 'settings_edit_form', 'settings', 'formatters');
 
@@ -121,9 +108,9 @@ class FallbackFormatter extends FormatterBase {
       $elements['formatters']['status'][$name] = array(
         '#type' => 'checkbox',
         '#title' => $options['label'],
-        '#default_value' => !empty($settings['formatters'][$name]['status']),
+        '#default_value' => !empty($options['status']),
         '#parents' => array_merge($parents, array($name, 'status')),
-        '#weight' => $weights[$name],
+        '#weight' => $options['weight'],
       );
     }
 
@@ -142,16 +129,10 @@ class FallbackFormatter extends FormatterBase {
         '#title' => t('Weight for @title', array('@title' => $options['label'])),
         '#title_display' => 'invisible',
         '#delta' => 50,
-        '#default_value' => $weights[$name],
+        '#default_value' => $options['weight'],
         '#parents' => array_merge($parents, array($name, 'weight')),
       );
-      $elements['formatters']['order'][$name]['#weight'] = $weights[$name];
-
-      $elements['formatters']['settings'][$name]['formatter'] = array(
-        '#type' => 'value',
-        '#value' => $name,
-        '#parents' => array_merge($parents, array($name, 'formatter')),
-      );
+      $elements['formatters']['order'][$name]['#weight'] = $options['weight'];
     }
 
     // Filter settings.
@@ -164,11 +145,17 @@ class FallbackFormatter extends FormatterBase {
           '#type' => 'fieldset',
           '#title' => $options['label'],
           '#parents' => array_merge($parents, array($name, 'settings')),
-          '#weight' => $weights[$name],
+          '#weight' => $options['weight'],
           '#group' => 'formatter_settings',
         );
         $elements['formatters']['settings'][$name] += $settings_form;
       }
+
+      $elements['formatters']['settings'][$name]['formatter'] = array(
+        '#type' => 'value',
+        '#value' => $name,
+        '#parents' => array_merge($parents, array($name, 'formatter')),
+      );
     }
 
     return $elements;
@@ -258,23 +245,29 @@ class FallbackFormatter extends FormatterBase {
    *   The field type for which to prepare the formatters.
    * @param array $formatters
    *   The formatter definitions we want to prepare.
+   * @param bool $filter_enabled
+   *   If TRUE (default) will filter out any disabled formatters. If FALSE
+   *   will return all possible formatters.
    *
    * @todo - this might be merged with getFormatter()?
    */
-  protected function prepareFormatters($field_type, array &$formatters) {
+  protected function prepareFormatters($field_type, array &$formatters, $filter_enabled = TRUE) {
+    $default_weight = 0;
+
     $allowed_formatters = fallback_formatter_get_possible_formatters($field_type);
+    $formatters += $allowed_formatters;
 
     $formatters = array_intersect_key($formatters, $allowed_formatters);
 
     foreach ($formatters as $formatter => $info) {
       // Remove disabled formatters.
-      if (isset($info['status']) && !$info['status']) {
+      if ($filter_enabled && empty($info['status'])) {
         unset($formatters[$formatter]);
         continue;
       }
 
       // Provide some default values.
-      $formatters[$formatter] += array('weight' => 0);
+      $formatters[$formatter] += array('weight' => $default_weight++);
       // Merge in defaults.
       $formatters[$formatter] += $allowed_formatters[$formatter];
       if (!empty($allowed_formatters[$formatter]['settings'])) {
@@ -283,6 +276,6 @@ class FallbackFormatter extends FormatterBase {
     }
 
     // Sort by weight.
-    uasort($formatters, 'fallback_formatter_sort_formatters');
+    uasort($formatters, array('Drupal\Component\Utility\SortArray', 'sortByWeightElement'));
   }
 }
