@@ -8,65 +8,77 @@
 namespace Drupal\fallback_formatter\Tests;
 
 use Drupal\Core\Render\Element;
-use Drupal\simpletest\WebTestBase;
+use Drupal\simpletest\KernelTestBase;
+use Drupal\field\Entity\FieldConfig;
+use Drupal\field\Entity\FieldStorageConfig;
+use Drupal\node\Entity\NodeType;
+use Drupal\node\Entity\Node;
 
 /**
  * Test basic functionality of the fallback formatter.
  *
  * @group fallback_formatter
  */
-class FallbackFormatterTestCase extends WebTestBase {
+class FallbackFormatterTestCase extends KernelTestBase {
 
-  public static $modules = array('node', 'text', 'fallback_formatter', 'fallback_formatter_test');
+  public static $modules = ['user', 'field', 'node', 'text', 'fallback_formatter', 'fallback_formatter_test'];
 
-  protected $contentType;
+  /** @var \Drupal\node\NodeInterface */
+  protected $node;
 
-  public function setUp() {
+  protected function setUp() {
     parent::setUp();
 
-    $this->contentType = $this->drupalCreateContentType();
+    $node_type_id = strtolower($this->randomMachineName(8));
+    $node_type = NodeType::create([
+      'type' => $node_type_id,
+      'name' => $node_type_id,
+    ]);
+    $node_type->save();
 
-    $field = entity_create('field_storage_config', array(
+    FieldStorageConfig::create([
       'field_name' => 'test_text',
       'entity_type' => 'node',
       'type' => 'text',
-    ));
-    $field->save();
+    ])->save();
 
-    $instance = entity_create('field_config', array(
-      'field_storage' => $field,
-      'bundle' => $this->contentType->id(),
-    ));
-    $instance->save();
-  }
+    FieldConfig::create([
+      'field_name' => 'test_text',
+      'entity_type' => 'node',
+      'label' => 'Test',
+      'bundle' => $node_type_id,
+    ])->save();
 
-  public function test() {
-
-    $node = entity_create('node', array(
-      'type' => $this->contentType->id(),
+    $this->node = Node::create([
+      'type' => $node_type_id,
       'test_text' => array(
         array(
           'value' => 'Apple',
           'format' => NULL,
         ),
         array(
-          'value' => 'Banana'
+          'value' => 'Banana',
         ),
         array(
-          'value' => 'Carrot'
-        )
-      )
-    ));
+          'value' => 'Carrot',
+        ),
+      ),
+    ]);
+  }
 
+  public function test() {
     $formatters = array(
       'fallback_test_a' => array(
         'settings' => array(),
+        'status' => 1,
       ),
       'fallback_test_b' => array(
         'settings' => array(),
+        'status' => 1,
       ),
       'fallback_test_default' => array(
         'settings' => array('prefix' => 'DEFAULT: '),
+        'status' => 1,
       ),
     );
     $expected = array(
@@ -74,13 +86,18 @@ class FallbackFormatterTestCase extends WebTestBase {
       1 => array('#markup' => 'B: Banana'),
       2 => array('#markup' => 'DEFAULT: Carrot'),
     );
-    $this->assertFallbackFormatter($node, $formatters, $expected);
+    $this->assertFallbackFormatter($this->node, $formatters, $expected);
 
     $formatters = array(
-      'fallback_test_a' => array(),
-      'fallback_test_b' => array(),
+      'fallback_test_a' => array(
+        'status' => 1,
+      ),
+      'fallback_test_b' => array(
+        'status' => 1,
+      ),
       'fallback_test_default' => array(
         'settings' => array('prefix' => 'DEFAULT: '),
+        'status' => 1,
         'weight' => -1,
       ),
     );
@@ -89,15 +106,19 @@ class FallbackFormatterTestCase extends WebTestBase {
       1 => array('#markup' => 'DEFAULT: Banana'),
       2 => array('#markup' => 'DEFAULT: Carrot'),
     );
-    $this->assertFallbackFormatter($node, $formatters, $expected);
+    $this->assertFallbackFormatter($this->node, $formatters, $expected);
 
     $formatters = array(
       'fallback_test_a' => array(
         'settings' => array('deny' => TRUE),
+        'status' => 1,
       ),
-      'fallback_test_b' => array(),
+      'fallback_test_b' => array(
+        'status' => 1,
+      ),
       'fallback_test_default' => array(
         'settings' => array('prefix' => 'DEFAULT: '),
+        'status' => 1,
       ),
     );
     $expected = array(
@@ -107,7 +128,7 @@ class FallbackFormatterTestCase extends WebTestBase {
       1 => array('#markup' => 'B: Banana'),
       2 => array('#markup' => 'DEFAULT: Carrot'),
     );
-    $this->assertFallbackFormatter($node, $formatters, $expected);
+    $this->assertFallbackFormatter($this->node, $formatters, $expected);
   }
 
   protected function assertFallbackFormatter($entity, array $formatters = array(), array $expected_output) {
