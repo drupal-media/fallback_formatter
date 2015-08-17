@@ -3,3 +3,6 @@ admin:
     fallback_formatter.admin.js: {}
   dependencies:
     - core/jquery
+    - core/drupal
+    - core/jquery.once
+    - core/drupal.form
