@@ -107,3 +107,17 @@ function theme_fallback_formatter_settings_order($variables) {
 
   return drupal_render($element);
 }
+
+/**
+ * Implements hook_entity_embed_display_plugins_alter().
+ *
+ * Do not allow the fallback formatter to be used as an entity embed display
+ * plugin.
+ */
+function fallback_formatter_entity_embed_display_plugins_alter(array &$plugins) {
+  foreach ($plugins as $id => $plugin) {
+    if (!empty($plugin['field_type']) && substr($id, -9) === ':fallback') {
+      unset($plugins[$id]);
+    }
+  }
+}
