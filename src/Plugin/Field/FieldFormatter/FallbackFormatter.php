@@ -40,7 +40,7 @@ class FallbackFormatter extends FormatterBase {
   /**
    * {@inheritdoc}
    */
-  public function viewElements(FieldItemListInterface $items) {
+  public function viewElements(FieldItemListInterface $items, $langcode) {
     $element = array();
     $settings = $this->getSettings();
 
@@ -61,7 +61,7 @@ class FallbackFormatter extends FormatterBase {
       $formatter_instance = $this->getFormatter($options);
       $formatter_instance->prepareView(array($items->getEntity()->id() => $items));
 
-      if ($result = $formatter_instance->viewElements($items)) {
+      if ($result = $formatter_instance->viewElements($items, $langcode)) {
 
         // Only add visible content from the formatter's render array result
         // that matches an unseen delta.
