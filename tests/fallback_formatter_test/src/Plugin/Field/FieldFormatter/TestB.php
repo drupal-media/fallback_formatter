@@ -23,7 +23,7 @@ use Drupal\Core\Field\FormatterBase;
  */
 class TestB extends FormatterBase {
 
-  public function viewElements(FieldItemListInterface $items) {
+  public function viewElements(FieldItemListInterface $items, $langcode) {
 
     $elements = array();
 
