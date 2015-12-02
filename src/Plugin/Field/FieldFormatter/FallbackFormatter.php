@@ -235,6 +235,7 @@ class FallbackFormatter extends FormatterBase {
       'view_mode' => $this->viewMode,
       'configuration' => array('type' => $options['id'], 'settings' => $options['settings']),
     );
+
     return $this->formatterManager->getInstance($options);
   }
 
@@ -254,7 +255,7 @@ class FallbackFormatter extends FormatterBase {
   protected function prepareFormatters($field_type, array &$formatters, $filter_enabled = TRUE) {
     $default_weight = 0;
 
-    $allowed_formatters = fallback_formatter_get_possible_formatters($field_type);
+    $allowed_formatters = $this->getPossibleFormatters($field_type);
     $formatters += $allowed_formatters;
 
     $formatters = array_intersect_key($formatters, $allowed_formatters);
@@ -278,4 +279,38 @@ class FallbackFormatter extends FormatterBase {
     // Sort by weight.
     uasort($formatters, array('Drupal\Component\Utility\SortArray', 'sortByWeightElement'));
   }
+
+  /**
+   * Gets possible formatters for the given field type.
+   *
+   * @param string $field_type
+   *   Field type for which we want to get the possible formatters.
+   *
+   * @return array
+   *   Formatters info array.
+   */
+  protected function getPossibleFormatters($field_type) {
+    $return = array();
+
+    foreach (\Drupal::service('plugin.manager.field.formatter')->getDefinitions() as $formatter => $info) {
+      // The fallback formatter cannot be used as a fallback formatter.
+      if ($formatter == 'fallback') {
+        continue;
+      }
+      // Check that the field type is allowed for the formatter.
+      elseif (!in_array($field_type, $info['field_types'])) {
+        continue;
+      }
+      elseif (!$info['class']::isApplicable($this->fieldDefinition)) {
+        continue;
+      }
+      else {
+        $return[$formatter] = $info;
+      }
+    }
+
+    return $return;
+  }
+
+
 }

@@ -31,39 +31,6 @@ function fallback_formatter_field_formatter_info_alter(&$info) {
   }
 }
 
-/**
- * Gets possible formatters for the given field type.
- *
- * @param string $field_type
- *   Field type for which we want to get the possible formatters.
- *
- * @return array
- *   Formatters info array.
- */
-function fallback_formatter_get_possible_formatters($field_type) {
-  $return = array();
-
-  foreach (\Drupal::service('plugin.manager.field.formatter')->getDefinitions() as $formatter => $info) {
-    // The fallback formatter cannot be used as a fallback formatter.
-    if ($formatter == 'fallback') {
-      continue;
-    }
-    // Check that the field type is allowed for the formatter.
-    elseif (!in_array($field_type, $info['field_types'])) {
-      continue;
-    }
-    // Formatters tagged as 'multiple' that render all items as one element
-    // instead of one element per item delta will fail fallback detection.
-    elseif (isset($info['behaviors']['multiple'])) {
-      continue;
-    }
-    else {
-      $return[$formatter] = $info;
-    }
-  }
-
-  return $return;
-}
 
 /**
  * Themes the formatter settings form.
