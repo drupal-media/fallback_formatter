@@ -183,10 +183,14 @@ class FallbackFormatter extends FormatterBase {
         $formatter_instance = $this->getFormatter($options);
         $result = $formatter_instance->settingsSummary();
 
-        $summary_items[] = SafeMarkup::format('<strong>@label</strong>!settings_summary', array(
-          '@label' => $formatter_instance->getPluginDefinition()['label'],
-          '!settings_summary' => '<br>' . Xss::filter(!empty($result) ? implode(', ', $result) : ''),
-        ));
+        $summary_items[] = [
+          '#type' => 'inline_template',
+          '#template' => '<strong>{{ label }}</strong>{{ settings_summary|raw }}',
+          '#context' => [
+            'label' => $formatter_instance->getPluginDefinition()['label'],
+            'settings_summary' => '<br>' . Xss::filter(!empty($result) ? implode(', ', $result) : ''),
+          ],
+        ];
       }
     }
 
