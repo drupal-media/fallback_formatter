@@ -1,25 +1,23 @@
-
-
-entity_view_display.field.fallback_formatter:
-  type: entity_field_view_display_base
+field.formatter.settings.fallback:
+  type: mapping
   label: 'Fallback formatter settings'
   mapping:
-    settings:
-      formatters:
-        type: sequence
-        label: 'Formatters'
-        sequence:
-          - type: mapping
-            label: 'Formatter settings'
-            mapping:
-              status:
-                type: boolean
-                label: 'Status'
-              weight:
-                type: integer
-                label: 'Weight'
-              formatter:
-                type: string
-                label: 'Formatter plugin id'
-              settings:
-                type: entity_view_display.field.[%parent.formatter]
+    formatters:
+      type: sequence
+      label: 'Formatters'
+      sequence:
+        - type: mapping
+          label: 'Formatter settings'
+          mapping:
+            status:
+              type: boolean
+              label: 'Status'
+            weight:
+              type: integer
+              label: 'Weight'
+            formatter:
+              type: string
+              label: 'Formatter'
+            settings:
+              type: field.formatter.settings.[%parent.formatter]
+              label: 'Settings'

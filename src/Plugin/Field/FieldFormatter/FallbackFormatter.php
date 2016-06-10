@@ -1,19 +1,17 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\fallback_formatter\Plugin\Field\FieldFormatter\FallbackFormatter.
- */
-
 namespace Drupal\fallback_formatter\Plugin\Field\FieldFormatter;
 
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Component\Utility\Xss;
 use Drupal\Core\Field\FieldDefinitionInterface;
 use Drupal\Core\Field\FieldItemListInterface;
 use Drupal\Core\Field\FormatterBase;
+use Drupal\Core\Field\FormatterPluginManager;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
 use Drupal\Core\Render\Element;
+use Drupal\Core\Render\RendererInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
  * Fallback formatter.
@@ -24,27 +22,76 @@ use Drupal\Core\Render\Element;
  *   weight = 100
  * )
  */
-class FallbackFormatter extends FormatterBase {
+class FallbackFormatter extends FormatterBase implements ContainerFactoryPluginInterface {
 
   /**
-   * @var \Drupal\Core\Field\FormatterPluginManager
+   * The manager for formatter plugins.
+   *
+   * @var \Drupal\Core\Field\FormatterPluginManager.
    */
   protected $formatterManager;
 
-  public function __construct($plugin_id, $plugin_definition, FieldDefinitionInterface $field_definition, array $settings, $label, $view_mode, array $third_party_settings) {
+  /**
+   * The renderer.
+   *
+   * @var \Drupal\Core\Render\RendererInterface
+   */
+  protected $renderer;
+
+  /**
+   * Constructs a FallbackFormatter object.
+   *
+   * @param string $plugin_id
+   *   The plugin_id for the formatter.
+   * @param mixed $plugin_definition
+   *   The plugin implementation definition.
+   * @param \Drupal\Core\Field\FieldDefinitionInterface $field_definition
+   *   The definition of the field to which the formatter is associated.
+   * @param array $settings
+   *   The formatter settings.
+   * @param string $label
+   *   The formatter label display setting.
+   * @param string $view_mode
+   *   The view mode.
+   * @param array $third_party_settings
+   *   Any third party settings settings.
+   * @param \Drupal\Core\Field\FormatterPluginManager
+   *   The manager for formatter plugins.
+   * @param \Drupal\Core\Render\RendererInterface $renderer
+   *   The renderer.
+   */
+  public function __construct($plugin_id, $plugin_definition, FieldDefinitionInterface $field_definition, array $settings, $label, $view_mode, array $third_party_settings, FormatterPluginManager $formatter_manager, RendererInterface $renderer) {
     parent::__construct($plugin_id, $plugin_definition, $field_definition, $settings, $label, $view_mode, $third_party_settings);
 
-    $this->formatterManager = \Drupal::service('plugin.manager.field.formatter');
+    $this->formatterManager = $formatter_manager;
+    $this->renderer = $renderer;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition) {
+    return new static(
+      $plugin_id,
+      $plugin_definition,
+      $configuration['field_definition'],
+      $configuration['settings'],
+      $configuration['label'],
+      $configuration['view_mode'],
+      $configuration['third_party_settings'],
+      $container->get('plugin.manager.field.formatter'),
+      $container->get('renderer')
+    );
   }
 
   /**
    * {@inheritdoc}
    */
   public function viewElements(FieldItemListInterface $items, $langcode) {
-    $element = array();
+    $element = [];
     $settings = $this->getSettings();
 
-    $items_array = array();
+    $items_array = [];
     foreach ($items as $item) {
       $items_array[] = $item;
     }
@@ -59,7 +106,7 @@ class FallbackFormatter extends FormatterBase {
       $formatter_items = array_diff_key($items_array, $element);
 
       $formatter_instance = $this->getFormatter($options);
-      $formatter_instance->prepareView(array($items->getEntity()->id() => $items));
+      $formatter_instance->prepareView([$items->getEntity()->id() => $items]);
 
       if ($result = $formatter_instance->viewElements($items, $langcode)) {
 
@@ -95,44 +142,50 @@ class FallbackFormatter extends FormatterBase {
 
     $elements['#attached']['library'][] = 'fallback_formatter/admin';
 
-    $parents = array('fields', $this->fieldDefinition->getName(), 'settings_edit_form', 'settings', 'formatters');
+    $parents = [
+      'fallback_formatter_settings',
+      'formatters'
+    ];
 
     // Filter status.
-    $elements['formatters']['status'] = array(
+    $elements['formatters']['status'] = [
       '#type' => 'item',
+      '#input' => FALSE,
       '#title' => t('Enabled formatters'),
       '#prefix' => '<div class="fallback-formatter-status-wrapper">',
       '#suffix' => '</div>',
-    );
+      '#element_validate' => [[$this, 'fallbackFormatterValidate']],
+    ];
     foreach ($formatters as $name => $options) {
-      $elements['formatters']['status'][$name] = array(
+      $elements['formatters']['status'][$name] = [
         '#type' => 'checkbox',
         '#title' => $options['label'],
         '#default_value' => !empty($options['status']),
-        '#parents' => array_merge($parents, array($name, 'status')),
+        '#parents' => array_merge($parents, [$name, 'status']),
         '#weight' => $options['weight'],
-      );
+      ];
     }
 
-    // Filter order (tabledrag).
-    $elements['formatters']['order'] = array(
+    // Filter weight (tabledrag).
+    $elements['formatters']['weight'] = [
       '#type' => 'item',
-      '#title' => t('Formatter processing order'),
+      '#input' => FALSE,
+      '#title' => t('Formatter processing weight'),
       '#theme' => 'fallback_formatter_settings_order',
-    );
+    ];
     foreach ($formatters as $name => $options) {
-      $elements['formatters']['order'][$name]['label'] = array(
+      $elements['formatters']['weight'][$name]['label'] = [
         '#markup' => $options['label'],
-      );
-      $elements['formatters']['order'][$name]['weight'] = array(
+      ];
+      $elements['formatters']['weight'][$name]['weight'] = [
         '#type' => 'weight',
-        '#title' => t('Weight for @title', array('@title' => $options['label'])),
+        '#title' => t('Weight for @title', ['@title' => $options['label']]),
         '#title_display' => 'invisible',
         '#delta' => 50,
         '#default_value' => $options['weight'],
-        '#parents' => array_merge($parents, array($name, 'weight')),
-      );
-      $elements['formatters']['order'][$name]['#weight'] = $options['weight'];
+        '#parents' => array_merge($parents, [$name, 'weight']),
+      ];
+      $elements['formatters']['weight'][$name]['#weight'] = $options['weight'];
     }
 
     // Filter settings.
@@ -141,24 +194,40 @@ class FallbackFormatter extends FormatterBase {
       $settings_form = $formatter_instance->settingsForm($form, $form_state);
 
       if (!empty($settings_form)) {
-        $elements['formatters']['settings'][$name] = array(
+        $elements['formatters']['settings'][$name] = [
           '#type' => 'fieldset',
           '#title' => $options['label'],
-          '#parents' => array_merge($parents, array($name, 'settings')),
+          '#parents' => array_merge($parents, [$name, 'settings']),
           '#weight' => $options['weight'],
           '#group' => 'formatter_settings',
-        );
+        ];
         $elements['formatters']['settings'][$name] += $settings_form;
       }
 
-      $elements['formatters']['settings'][$name]['formatter'] = array(
+      $elements['formatters']['settings'][$name]['formatter'] = [
         '#type' => 'value',
         '#value' => $name,
-        '#parents' => array_merge($parents, array($name, 'formatter')),
-      );
+        '#parents' => array_merge($parents, [$name, 'formatter']),
+      ];
     }
 
     return $elements;
+  }
+
+  /**
+   * #element_validate handler for the "status" element in settingsForm().
+   *
+   * @param array $element
+   *   The element.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   The current state of the form.
+   */
+  public function fallbackFormatterValidate(array $element, FormStateInterface $form_state) {
+    $top_parents = array_diff($element['#parents'], array_slice($element['#parents'], -2));
+    // Copy the settings values to the correct location.
+    $form_state->setValue($top_parents, $form_state->getValue('fallback_formatter_settings'));
+    // Clean up form state.
+    $form_state->unsetValue('fallback_formatter_settings');
   }
 
   /**
@@ -170,13 +239,13 @@ class FallbackFormatter extends FormatterBase {
 
     $this->prepareFormatters($this->fieldDefinition->getType(), $settings['formatters']);
 
-    $summary_items = array();
+    $summary_items = [];
     foreach ($settings['formatters'] as $name => $options) {
       if (!isset($formatters[$name])) {
-        $summary_items[] = t('Unknown formatter %name.', array('%name' => $name));
+        $summary_items[] = t('Unknown formatter %name.', ['%name' => $name]);
       }
       elseif (!in_array($this->fieldDefinition->getType(), $formatters[$name]['field_types'])) {
-        $summary_items[] = t('Invalid formatter %name.', array('%name' => $formatters[$name]['label']));
+        $summary_items[] = t('Invalid formatter %name.', ['%name' => $formatters[$name]['label']]);
       }
       else {
 
@@ -195,30 +264,30 @@ class FallbackFormatter extends FormatterBase {
     }
 
     if (empty($summary_items)) {
-      $summary = array(
+      $summary = [
         '#markup' => t('No formatters selected yet.'),
         '#prefix' => '<strong>',
         '#suffix' => '</strong>',
-      );
+      ];
     }
     else {
-      $summary = array(
+      $summary = [
         '#theme' => 'item_list',
         '#items' => $summary_items,
         '#type' => 'ol'
-      );
+      ];
     }
 
-    return array(drupal_render($summary));
+    return [$this->renderer->render($summary)];
   }
 
   /**
    * {@inheritdoc}
    */
   public static function defaultSettings() {
-    return array(
-      'formatters' => array(),
-    );
+    return [
+      'formatters' => [],
+    ];
   }
 
   /**
@@ -231,14 +300,14 @@ class FallbackFormatter extends FormatterBase {
    */
   protected function getFormatter($options) {
     if (!isset($options['settings'])) {
-      $options['settings'] = array();
+      $options['settings'] = [];
     }
 
-    $options += array(
+    $options += [
       'field_definition' => $this->fieldDefinition,
       'view_mode' => $this->viewMode,
-      'configuration' => array('type' => $options['id'], 'settings' => $options['settings']),
-    );
+      'configuration' => ['type' => $options['id'], 'settings' => $options['settings']],
+    ];
 
     return $this->formatterManager->getInstance($options);
   }
@@ -272,7 +341,7 @@ class FallbackFormatter extends FormatterBase {
       }
 
       // Provide some default values.
-      $formatters[$formatter] += array('weight' => $default_weight++);
+      $formatters[$formatter] += ['weight' => $default_weight++];
       // Merge in defaults.
       $formatters[$formatter] += $allowed_formatters[$formatter];
       if (!empty($allowed_formatters[$formatter]['settings'])) {
@@ -281,7 +350,7 @@ class FallbackFormatter extends FormatterBase {
     }
 
     // Sort by weight.
-    uasort($formatters, array('Drupal\Component\Utility\SortArray', 'sortByWeightElement'));
+    uasort($formatters, ['Drupal\Component\Utility\SortArray', 'sortByWeightElement']);
   }
 
   /**
@@ -294,9 +363,9 @@ class FallbackFormatter extends FormatterBase {
    *   Formatters info array.
    */
   protected function getPossibleFormatters($field_type) {
-    $return = array();
+    $return = [];
 
-    foreach (\Drupal::service('plugin.manager.field.formatter')->getDefinitions() as $formatter => $info) {
+    foreach ($this->formatterManager->getDefinitions() as $formatter => $info) {
       // The fallback formatter cannot be used as a fallback formatter.
       if ($formatter == 'fallback') {
         continue;
@@ -315,6 +384,5 @@ class FallbackFormatter extends FormatterBase {
 
     return $return;
   }
-
 
 }
