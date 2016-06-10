@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\fallback_formatter_test\Plugin\Field\FieldFormatter\TestDefault.
- */
-
 namespace Drupal\fallback_formatter_test\Plugin\Field\FieldFormatter;
 
 use Drupal\Core\Field\FieldItemListInterface;
@@ -23,28 +18,32 @@ use Drupal\Core\Field\FormatterBase;
  */
 class TestDefault extends FormatterBase {
 
+  /**
+   * {@inheritdoc}
+   */
   public function viewElements(FieldItemListInterface $items, $langcode) {
 
-    $elements = array();
+    $elements = [];
 
     /** @var \Drupal\Core\Field\FieldItemInterface $item */
     foreach ($items as $delta => $item) {
       $output = $item->value;
       if (!empty($this->settings['prefix'])) {
-        $elements[$delta] = array('#markup' => $this->settings['prefix'] . $output);
+        $elements[$delta] = ['#markup' => $this->settings['prefix'] . $output];
       }
       else {
-        $elements[$delta] = array('#markup' => $output);
+        $elements[$delta] = ['#markup' => $output];
       }
     }
 
     return $elements;
   }
 
+  /**
+   * {@inheritdoc}
+   */
   public static function defaultSettings() {
-    return array(
-      'prefix' => '',
-    );
+    return ['prefix' => ''];
   }
 
 }

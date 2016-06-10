@@ -55,14 +55,13 @@ class FallbackFormatter extends FormatterBase implements ContainerFactoryPluginI
    *   The view mode.
    * @param array $third_party_settings
    *   Any third party settings settings.
-   * @param \Drupal\Core\Field\FormatterPluginManager
+   * @param \Drupal\Core\Field\FormatterPluginManager $formatter_manager
    *   The manager for formatter plugins.
    * @param \Drupal\Core\Render\RendererInterface $renderer
    *   The renderer.
    */
   public function __construct($plugin_id, $plugin_definition, FieldDefinitionInterface $field_definition, array $settings, $label, $view_mode, array $third_party_settings, FormatterPluginManager $formatter_manager, RendererInterface $renderer) {
     parent::__construct($plugin_id, $plugin_definition, $field_definition, $settings, $label, $view_mode, $third_party_settings);
-
     $this->formatterManager = $formatter_manager;
     $this->renderer = $renderer;
   }
@@ -100,7 +99,7 @@ class FallbackFormatter extends FormatterBase implements ContainerFactoryPluginI
     $this->prepareFormatters($this->fieldDefinition->getType(), $settings['formatters']);
 
     // Loop through each formatter in order.
-    foreach ($settings['formatters'] as $name => $options) {
+    foreach ($settings['formatters'] as $options) {
 
       // Run any unrendered items through the formatter.
       $formatter_items = array_diff_key($items_array, $element);
@@ -144,7 +143,7 @@ class FallbackFormatter extends FormatterBase implements ContainerFactoryPluginI
 
     $parents = [
       'fallback_formatter_settings',
-      'formatters'
+      'formatters',
     ];
 
     // Filter status.
@@ -215,7 +214,7 @@ class FallbackFormatter extends FormatterBase implements ContainerFactoryPluginI
   }
 
   /**
-   * #element_validate handler for the "status" element in settingsForm().
+   * The #element_validate handler for the "status" element in settingsForm().
    *
    * @param array $element
    *   The element.
@@ -274,7 +273,7 @@ class FallbackFormatter extends FormatterBase implements ContainerFactoryPluginI
       $summary = [
         '#theme' => 'item_list',
         '#items' => $summary_items,
-        '#type' => 'ol'
+        '#type' => 'ol',
       ];
     }
 
@@ -297,6 +296,7 @@ class FallbackFormatter extends FormatterBase implements ContainerFactoryPluginI
    *   Formatter options.
    *
    * @return \Drupal\Core\Field\FormatterInterface
+   *   Returns the formatter instance.
    */
   protected function getFormatter($options) {
     if (!isset($options['settings'])) {
@@ -320,8 +320,8 @@ class FallbackFormatter extends FormatterBase implements ContainerFactoryPluginI
    * @param array $formatters
    *   The formatter definitions we want to prepare.
    * @param bool $filter_enabled
-   *   If TRUE (default) will filter out any disabled formatters. If FALSE
-   *   will return all possible formatters.
+   *   If TRUE (default) will filter out any disabled formatters. If FALSE will
+   *   return all possible formatters.
    *
    * @todo - this might be merged with getFormatter()?
    */

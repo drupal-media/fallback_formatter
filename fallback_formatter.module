@@ -1,16 +1,22 @@
 <?php
+
+/**
+ * @file
+ * Hook implementations for the Fallback formatter module.
+ */
+
 use Drupal\Core\Render\Element;
 
 /**
  * Implements hook_theme().
  */
 function fallback_formatter_theme() {
-  return array(
-    'fallback_formatter_settings_order' => array(
+  return [
+    'fallback_formatter_settings_order' => [
       'render element' => 'element',
       'function' => 'theme_fallback_formatter_settings_order',
-    ),
-  );
+    ],
+  ];
 }
 
 /**
@@ -19,8 +25,8 @@ function fallback_formatter_theme() {
 function fallback_formatter_field_formatter_info_alter(&$info) {
   // Only enable the fallback formatter for field_types that already have one
   // or more formatters.
-  $field_types = array();
-  foreach ($info as $index => $formatter) {
+  $field_types = [];
+  foreach ($info as $formatter) {
     $field_types = array_merge($field_types, $formatter['field_types']);
   }
   $counts = array_count_values($field_types);
@@ -30,7 +36,6 @@ function fallback_formatter_field_formatter_info_alter(&$info) {
     }
   }
 }
-
 
 /**
  * Themes the formatter settings form.
@@ -45,34 +50,34 @@ function theme_fallback_formatter_settings_order($variables) {
   $element = $variables['element'];
 
   // Fallback formatter order (tabledrag).
-  $rows = array();
+  $rows = [];
   foreach (Element::children($element, TRUE) as $name) {
     $element[$name]['weight']['#attributes']['class'][] = 'fallback-formatter-order-weight';
-    $rows[] = array(
-      'data' => array(
-        drupal_render($element[$name]['label']),
-        drupal_render($element[$name]['weight']),
-      ),
-      'class' => array('draggable'),
-    );
+    $rows[] = [
+      'data' => [
+        \Drupal::service('renderer')->render($element[$name]['label']),
+        \Drupal::service('renderer')->render($element[$name]['weight']),
+      ],
+      'class' => ['draggable'],
+    ];
   }
 
   $table = &$element[];
 
-  $table = array(
+  $table = [
     '#theme' => 'table',
     '#rows' => $rows,
-    '#attributes' => array('id' => 'fallback-formatter-order'),
-  );
+    '#attributes' => ['id' => 'fallback-formatter-order'],
+  ];
 
-  drupal_attach_tabledrag($table, array(
+  drupal_attach_tabledrag($table, [
     'table_id' => 'fallback-formatter-order',
     'action' => 'order',
     'relationship' => 'sibling',
-    'group' => 'fallback-formatter-order-weight'
-  ));
+    'group' => 'fallback-formatter-order-weight',
+  ]);
 
-  return drupal_render($element);
+  return \Drupal::service('renderer')->render($element);
 }
 
 /**

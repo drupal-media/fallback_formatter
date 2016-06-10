@@ -1,13 +1,9 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\fallback_formatter\Tests\FallbackFormatterTestCase.
- */
-
 namespace Drupal\fallback_formatter\Tests;
 
 use Drupal\Core\Render\Element;
+use Drupal\node\NodeInterface;
 use Drupal\simpletest\KernelTestBase;
 use Drupal\field\Entity\FieldConfig;
 use Drupal\field\Entity\FieldStorageConfig;
@@ -21,11 +17,30 @@ use Drupal\node\Entity\Node;
  */
 class FallbackFormatterTestCase extends KernelTestBase {
 
-  public static $modules = ['user', 'field', 'node', 'text', 'fallback_formatter', 'fallback_formatter_test'];
+  /**
+   * Modules to enable.
+   *
+   * @var array
+   */
+  public static $modules = [
+    'user',
+    'field',
+    'node',
+    'text',
+    'fallback_formatter',
+    'fallback_formatter_test',
+  ];
 
-  /** @var \Drupal\node\NodeInterface */
+  /**
+   * The created node.
+   *
+   * @var \Drupal\node\NodeInterface
+   */
   protected $node;
 
+  /**
+   * {@inheritdoc}
+   */
   protected function setUp() {
     parent::setUp();
 
@@ -51,93 +66,103 @@ class FallbackFormatterTestCase extends KernelTestBase {
 
     $this->node = Node::create([
       'type' => $node_type_id,
-      'test_text' => array(
-        array(
+      'test_text' => [
+        [
           'value' => 'Apple',
           'format' => NULL,
-        ),
-        array(
-          'value' => 'Banana',
-        ),
-        array(
-          'value' => 'Carrot',
-        ),
-      ),
+        ],
+        ['value' => 'Banana'],
+        ['value' => 'Carrot'],
+      ],
     ]);
   }
 
-  public function test() {
-    $formatters = array(
-      'fallback_test_a' => array(
-        'settings' => array(),
+  /**
+   * Tests basic functionality of fallback formatter.
+   */
+  public function testBasicFunctionality() {
+    $formatters = [
+      'fallback_test_a' => [
+        'settings' => [],
         'status' => 1,
-      ),
-      'fallback_test_b' => array(
-        'settings' => array(),
+      ],
+      'fallback_test_b' => [
+        'settings' => [],
         'status' => 1,
-      ),
-      'fallback_test_default' => array(
-        'settings' => array('prefix' => 'DEFAULT: '),
+      ],
+      'fallback_test_default' => [
+        'settings' => ['prefix' => 'DEFAULT: '],
         'status' => 1,
-      ),
-    );
-    $expected = array(
-      0 => array('#markup' => 'A: Apple'),
-      1 => array('#markup' => 'B: Banana'),
-      2 => array('#markup' => 'DEFAULT: Carrot'),
-    );
-    $this->assertFallbackFormatter($this->node, $formatters, $expected);
+      ],
+    ];
+    $expected = [
+      0 => ['#markup' => 'A: Apple'],
+      1 => ['#markup' => 'B: Banana'],
+      2 => ['#markup' => 'DEFAULT: Carrot'],
+    ];
+    $this->assertFallbackFormatter($this->node, $expected, $formatters);
 
-    $formatters = array(
-      'fallback_test_a' => array(
+    $formatters = [
+      'fallback_test_a' => [
         'status' => 1,
-      ),
-      'fallback_test_b' => array(
+      ],
+      'fallback_test_b' => [
         'status' => 1,
-      ),
-      'fallback_test_default' => array(
-        'settings' => array('prefix' => 'DEFAULT: '),
+      ],
+      'fallback_test_default' => [
+        'settings' => ['prefix' => 'DEFAULT: '],
         'status' => 1,
         'weight' => -1,
-      ),
-    );
-    $expected = array(
-      0 => array('#markup' => 'DEFAULT: Apple'),
-      1 => array('#markup' => 'DEFAULT: Banana'),
-      2 => array('#markup' => 'DEFAULT: Carrot'),
-    );
-    $this->assertFallbackFormatter($this->node, $formatters, $expected);
+      ],
+    ];
+    $expected = [
+      0 => ['#markup' => 'DEFAULT: Apple'],
+      1 => ['#markup' => 'DEFAULT: Banana'],
+      2 => ['#markup' => 'DEFAULT: Carrot'],
+    ];
+    $this->assertFallbackFormatter($this->node, $expected, $formatters);
 
-    $formatters = array(
-      'fallback_test_a' => array(
-        'settings' => array('deny' => TRUE),
+    $formatters = [
+      'fallback_test_a' => [
+        'settings' => ['deny' => TRUE],
         'status' => 1,
-      ),
-      'fallback_test_b' => array(
+      ],
+      'fallback_test_b' => [
         'status' => 1,
-      ),
-      'fallback_test_default' => array(
-        'settings' => array('prefix' => 'DEFAULT: '),
+      ],
+      'fallback_test_default' => [
+        'settings' => ['prefix' => 'DEFAULT: '],
         'status' => 1,
-      ),
-    );
-    $expected = array(
+      ],
+    ];
+    $expected = [
       // Delta 0 skips the first formatter, but we test that it is still
       // returned in the proper order since the last formatter displayed it.
-      0 => array('#markup' => 'DEFAULT: Apple'),
-      1 => array('#markup' => 'B: Banana'),
-      2 => array('#markup' => 'DEFAULT: Carrot'),
-    );
-    $this->assertFallbackFormatter($this->node, $formatters, $expected);
+      0 => ['#markup' => 'DEFAULT: Apple'],
+      1 => ['#markup' => 'B: Banana'],
+      2 => ['#markup' => 'DEFAULT: Carrot'],
+    ];
+    $this->assertFallbackFormatter($this->node, $expected, $formatters);
   }
 
-  protected function assertFallbackFormatter($entity, array $formatters = array(), array $expected_output) {
-    $display = array(
+  /**
+   * Asserts the fallback formatter output.
+   *
+   * @param \Drupal\node\NodeInterface $entity
+   *   The entity object.
+   * @param array $expected_output
+   *   The expected output.
+   * @param array $formatters
+   *   The formatter settings.
+   */
+  protected function assertFallbackFormatter(NodeInterface $entity, array $expected_output, array $formatters = []) {
+    $display = [
       'type' => 'fallback',
-      'settings' => array('formatters' => $formatters),
-    );
+      'settings' => ['formatters' => $formatters],
+    ];
     $output = $entity->test_text->view($display);
     $output = array_intersect_key($output, Element::children($output));
     $this->assertEqual($output, $expected_output);
   }
+
 }

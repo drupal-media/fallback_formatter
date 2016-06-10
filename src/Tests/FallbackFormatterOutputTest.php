@@ -2,7 +2,6 @@
 
 namespace Drupal\fallback_formatter\Tests;
 
-use Drupal\Core\Render\Element;
 use Drupal\simpletest\WebTestBase;
 
 /**
